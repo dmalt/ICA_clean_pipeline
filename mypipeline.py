@@ -1,36 +1,3 @@
-import sys, os
-import getpass
-
-test = True
-
-data_type = 'fif'
-main_path = '/net/server/data/home/meg/DMALT/aut_rs/'
-data_path = os.path.join(main_path,"MEG")
-MEG_elec_coords_file = os.path.join(data_path,"correct_channel_coords.txt")
-MEG_elec_names_file  = os.path.join(data_path,"correct_channel_names.txt")
-
-l_freq = 0.1
-h_freq = 300
-
-is_ICA = True 
-
-subject_ids = ["R0036"]
-sessions = ["01"]
-### set sbj dir path, i.e. where the FS folfers are
-sbj_dir   =  os.path.join(main_path,"FSF")
-correl_analysis_name = "aut_rs_pipeline" + "_" + data_type  + "_" + str(epoch_window_length).replace('.','_')
-
-
-
-
-
-
-if test == True:
-    correl_analysis_name = correl_analysis_name + '_test'
-    
-
-
-
 import nipype
 print nipype.__version__
 
@@ -38,6 +5,38 @@ import nipype.interfaces.io as nio
 
 from nipype.interfaces.utility import IdentityInterface,Function
 import nipype.pipeline.engine as pe
+from ica_preproc import preprocess_ICA_fif_to_ts
+
+
+
+from params import main_path, data_path
+from params import subject_ids,sessions
+
+from params import l_freq, h_freq
+from params import correl_analysis_name
+#------------- Dmalt ------------------- #
+from table_handling import get_eo_ec_by_name
+from split_data import split_fif_into_eo_ec
+from table_handling import get_ECG_EOG_chnames_by_SubjID
+#---------------------------------------- #
+
+
+#### basic imports
+# import sys,io,os,fnmatch,shutil
+
+import matplotlib
+matplotlib.use('PS')
+
+#### nibabel import
+#import nibabel as nib
+
+##### nipype import
+#from nipype import config
+#config.enable_debug_mode()
+
+import nipype
+print nipype.__version__
+
 
 def create_datasource_fif():
     
@@ -107,42 +106,37 @@ def create_main_workflow_spectral_modularity():
 #----------------------------- end of eo_ec_split node --------------------------------------#
 
 ### ------------------------ preproc node ---------------------------------------#
-    if is_ICA:
-        if is_set_ICA_components:
-            preproc = pe.Node(interface = Function(input_names = ["fif_file", 'n_comp_exclude', 'l_freq', 'h_freq', 'down_sfreq',
-                                                                  'is_sensor_space'], 
-                                               output_names =["ts_file","channel_coords_file","channel_names_file","sfreq"],
-                                               function = preprocess_set_ICA_comp_fif_to_ts),name = 'preproc')                                            
-            preproc.inputs.n_comp_exclude = n_comp_exclude
-        else:
-           preproc = pe.Node(interface = Function(input_names = ["fif_file", 'ECG_ch_name', 'EoG_ch_name','l_freq', 'h_freq', 'down_sfreq', 
-                                                                 'is_sensor_space'], 
-                                               # output_names =["raw_ica_filename", "ts_file","channel_coords_file","channel_names_file","sfreq"],
-                                               output_names =["raw_ica_filename", "channel_coords_file","channel_names_file","sfreq"],
-                                               function = preprocess_ICA_fif_to_ts), name = 'preproc')
-           # Names of channels are now extracted from Aut_gamma_EO_EC_timing.xls table
-           # preproc.inputs.ECG_ch_name = ECG_ch_name
-           # preproc.inputs.EoG_ch_name = EoG_ch_name
-       
-        preproc.inputs.is_sensor_space = True
-    else:
-        preproc = pe.Node(interface = Function(input_names = ["fif_file", 'l_freq', 'h_freq', 'down_sfreq'], 
-                                               output_names =["ts_file","channel_coords_file","channel_names_file","sfreq"],
-                                               function = preprocess_fif_to_ts),name = 'preproc')
+        
+    preproc = pe.Node(interface = Function(input_names = ["fif_file", 'ECG_ch_name', 'EoG_ch_name','l_freq', 'h_freq', 'down_sfreq', 
+                                                             'is_sensor_space'], 
+                                           # output_names =["raw_ica_filename", "ts_file","channel_coords_file","channel_names_file","sfreq"],
+                                           output_names =["raw_ica_filename", "channel_coords_file","channel_names_file","sfreq"],
+                                           function = preprocess_ICA_fif_to_ts), name = 'preproc')
+       # Names of channels are now extracted from Aut_gamma_EO_EC_timing.xls table
+       # preproc.inputs.ECG_ch_name = ECG_ch_name
+       # preproc.inputs.EoG_ch_name = EoG_ch_name
+   
+    preproc.inputs.is_sensor_space = True
 
     # main_workflow.connect(eo_ec_split, 'Raw_ec_name', fif_to_ts, "fif_file")
     preproc.inputs.l_freq = l_freq
     preproc.inputs.h_freq = h_freq
-    preproc.inputs.down_sfreq = down_sfreq
     
     main_workflow.connect(ECG_EOG_ch_names, "ECG_name", preproc, "ECG_ch_name")
     main_workflow.connect(ECG_EOG_ch_names, "EOG_names", preproc, "EoG_ch_name")
     main_workflow.connect(preproc, 'raw_ica_filename', eo_ec_split, 'fif_file')
-
 
     main_workflow.connect(datasource, 'fif_file',preproc, 'fif_file')
      
     return main_workflow
 
 if __name__ == '__main__':
-	main()
+    
+    # run pipeline:
+    main_workflow = create_main_workflow_spectral_modularity()
+         
+    ####### run
+    
+    # main_workflow.write_graph(graph2use='colored')
+    main_workflow.config['execution'] = {'remove_unnecessary_outputs':'false'}
+    main_workflow.run(plugin='MultiProc', plugin_args={'n_procs' : 2})
