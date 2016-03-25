@@ -98,7 +98,7 @@ def create_main_workflow_spectral_modularity():
                                              function=split_fif_into_eo_ec),
                           name="eo_ec_split")
 
-    #main_workflow.connect(datasource, 'fif_file', eo_ec_split, 'fif_file')
+    main_workflow.connect(datasource, 'fif_file', eo_ec_split, 'fif_file')
     main_workflow.connect(eo_ec_times, 'lCondStart', eo_ec_split, 'lCondStart')
     main_workflow.connect(eo_ec_times, 'lCondEnd', eo_ec_split, 'lCondEnd')
     main_workflow.connect(eo_ec_times, 'cond', eo_ec_split, 'cond')
@@ -107,26 +107,23 @@ def create_main_workflow_spectral_modularity():
 
 ### ------------------------ preproc node ---------------------------------------#
         
-    preproc = pe.Node(interface = Function(input_names = ["fif_file", 'ECG_ch_name', 'EoG_ch_name','l_freq', 'h_freq', 'down_sfreq', 
-                                                             'is_sensor_space'], 
+    preproc = pe.Node(interface = Function(input_names = ["fif_file", 'ECG_ch_name', 'EoG_ch_name','l_freq', 'h_freq'], 
                                            # output_names =["raw_ica_filename", "ts_file","channel_coords_file","channel_names_file","sfreq"],
-                                           output_names =["raw_ica_filename", "channel_coords_file","channel_names_file","sfreq"],
+                                           output_names =["raw_ica_filename", "sfreq"],
                                            function = preprocess_ICA_fif_to_ts), name = 'preproc')
-       # Names of channels are now extracted from Aut_gamma_EO_EC_timing.xls table
-       # preproc.inputs.ECG_ch_name = ECG_ch_name
-       # preproc.inputs.EoG_ch_name = EoG_ch_name
+       
    
     preproc.inputs.is_sensor_space = True
 
-    # main_workflow.connect(eo_ec_split, 'Raw_ec_name', fif_to_ts, "fif_file")
     preproc.inputs.l_freq = l_freq
     preproc.inputs.h_freq = h_freq
     
     main_workflow.connect(ECG_EOG_ch_names, "ECG_name", preproc, "ECG_ch_name")
     main_workflow.connect(ECG_EOG_ch_names, "EOG_names", preproc, "EoG_ch_name")
-    main_workflow.connect(preproc, 'raw_ica_filename', eo_ec_split, 'fif_file')
+    # main_workflow.connect(preproc, 'raw_ica_filename', eo_ec_split, 'fif_file')
+    main_workflow.connect(eo_ec_split, 'eo_ec_split_fif', preproc, 'fif_file')
 
-    main_workflow.connect(datasource, 'fif_file',preproc, 'fif_file')
+    # main_workflow.connect(datasource, 'fif_file',preproc, 'fif_file')
      
     return main_workflow
 
