@@ -46,14 +46,10 @@ def preprocess_ICA_fif_to_ts(fif_file, ECG_ch_name, EoG_ch_name, l_freq, h_freq)
     
     #print rnk
     rnk = 'N/A'
-
-
     ### 1) Fit ICA model using the FastICA algorithm
     # Other available choices are `infomax` or `extended-infomax`
     # We pass a float value between 0 and 1 to select n_components based on the
     # percentage of variance explained by the PCA components.
-    ICA_title = 'Sources related to %s artifacts (red)'
-    is_show = False # visualization
     reject = dict(mag=10e-12, grad=10000e-13)
     flat = dict(mag=0.1e-12, grad=1e-13)
     # check if we have an ICA, if yes, we load it
@@ -101,6 +97,7 @@ def preprocess_ICA_fif_to_ts(fif_file, ECG_ch_name, EoG_ch_name, l_freq, h_freq)
     n_max_eog = 4
     eog_inds, eog_scores = ica.find_bads_eog(raw, ch_name=EoG_ch_name)
     eog_inds = eog_inds[:n_max_eog]
+    eog_evoked = create_eog_epochs(raw, tmin=-.5, tmax=.5, picks=select_sensors, ch_name=EoG_ch_name).average()
     # ------------------------------------------------------ # 
     # This is necessary. Otherwise line 
     # will through an exception
@@ -109,7 +106,7 @@ def preprocess_ICA_fif_to_ts(fif_file, ECG_ch_name, EoG_ch_name, l_freq, h_freq)
     # ------------------------------------------------------ #
     generateReport(raw=raw, ica=ica, subj_name=subj_name, subj_path=subj_path, basename=basename,
                    ecg_evoked=ecg_evoked, ecg_scores=ecg_scores, ecg_inds=ecg_inds, ECG_ch_name=ECG_ch_name,
-                   eog_evoked=None, eog_scores=eog_scores, eog_inds=eog_inds, EoG_ch_name=EoG_ch_name)
+                   eog_evoked=eog_evoked, eog_scores=eog_scores, eog_inds=eog_inds, EoG_ch_name=EoG_ch_name)
 
 
     sfreq = raw.info['sfreq']
