@@ -3,7 +3,7 @@ def preprocess_ICA_fif_to_ts(fif_file, ECG_ch_name, EoG_ch_name, l_freq, h_freq)
     import os
     import mne
     from mne.io import Raw	
-    from mne.preprocessing import ICA, read_ica
+    from mne.preprocessing import ICA
     from mne.preprocessing import create_ecg_epochs, create_eog_epochs
     from nipype.utils.filemanip import split_filename as split_f
     from reportGen import generateReport
@@ -14,7 +14,7 @@ def preprocess_ICA_fif_to_ts(fif_file, ECG_ch_name, EoG_ch_name, l_freq, h_freq)
     ##################### Delete later #####################
     subj_name = subj_path[-5:]
     results_dir = subj_path[:-6]
-    results_dir += '2016'
+    # results_dir += '2016'
     subj_path = results_dir + '/' + subj_name
     if not os.path.exists(subj_path):
         os.makedirs(subj_path)
@@ -73,7 +73,7 @@ def preprocess_ICA_fif_to_ts(fif_file, ECG_ch_name, EoG_ch_name, l_freq, h_freq)
                 drop_small_buffer=False, proj=False, fmt='single', overwrite=True, split_size='2GB', verbose=None)
     icaSrc = None
     # if has_ICA == False:
-    #     ica.save(ica_filename)
+    ica.save(ica_filename)
     # return
     ### 2) identify bad components by analyzing latent sources.
     # generate ECG epochs use detection via phase statistics
