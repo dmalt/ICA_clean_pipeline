@@ -37,6 +37,13 @@ def preprocess_ICA_fif_to_ts(fif_file, ECG_ch_name, EoG_ch_name, l_freq, h_freq)
     ### filtering 
     raw.filter(l_freq = l_freq, h_freq = h_freq, picks = picks_meeg, method='iir', n_jobs=1)
 
+    # if ECG_ch_name == 'EMG063':
+    raw.set_channel_types({ECG_ch_name: 'ecg'})  # Without this files with ECG_ch_name = 'EMG063' fail                                     
+        # ECG_ch_name = 'ECG063'
+    if EoG_ch_name =='EMG065,EMG066,EMG067,EMG068':   # Because ica.find_bads_eog... can process max 2 EoG channels
+        EoG_ch_name = 'EMG065,EMG067'                 # it won't fail if I specify 4 channels, but it'll use only first
+                                                      # EMG065 and EMG066 are for vertical eye movements and 
+                                                      # EMG067 and EMG068 are for horizontal
     
     #print rnk
     rnk = 'N/A'
@@ -48,7 +55,7 @@ def preprocess_ICA_fif_to_ts(fif_file, ECG_ch_name, EoG_ch_name, l_freq, h_freq)
     # percentage of variance explained by the PCA components.
     ICA_title = 'Sources related to %s artifacts (red)'
     is_show = False # visualization
-    reject = dict(mag=6e-12, grad=6000e-13)
+    reject = dict(mag=10e-12, grad=10000e-13)
     flat = dict(mag=0.1e-12, grad=1e-13)
     # check if we have an ICA, if yes, we load it
     ica_filename = os.path.join(subj_path, basename + "-ica.fif")  
@@ -111,16 +118,11 @@ def preprocess_ICA_fif_to_ts(fif_file, ECG_ch_name, EoG_ch_name, l_freq, h_freq)
                                               'Time-locked ECG sources'], section = 'ICA - ECG for ' + subj_name)  
     # ----------------------------------- end generate report for ECG ------------------------------- #
 
-    if EoG_ch_name =='EMG065,EMG066,EMG067,EMG068':   # Because ica.find_bads_eog... can process max 2 EoG channels
-        EoG_ch_name = 'EMG065,EMG067'                 # it won't fail if I specify 4 channels, but it'll use only first
-                                                      # EMG065 and EMG066 are for vertical eye movements and 
-                                                      # EMG067 and EMG068 are for horizontal
-
+    
     eog_inds, scores = ica.find_bads_eog(raw, ch_name=EoG_ch_name)
 
     # ------------------------------------------------------ # 
     # This is necessary. Otherwise line 
-    # fig7 = ica.plot_sources(raw, show_picks, exclude=eog_inds, title=ICA_title % 'eog', show=is_show)  
     # will through an exception
     eog_inds = eog_inds[:n_max_eog]
     if not eog_inds:
@@ -177,11 +179,13 @@ def preprocess_ICA_fif_to_ts(fif_file, ECG_ch_name, EoG_ch_name, l_freq, h_freq)
 
 if __name__ == '__main__':
     # subj_name = 'R0010'
-    subj_name = 'K0021'
+    # subj_name = 'K0021'
+    subj_name = 'R0035'
     fif_file = '/net/server/data/home/meg/DMALT/aut_rs/MEG/' + subj_name + '/' + subj_name + '_rest_raw_tsss_mc_trans_eo.fif'
+    # ECG_ch_name = 'ECG063'
     ECG_ch_name = 'ECG063'
-    EoG_ch_name = 'EOG061,EOG062'
-    # EoG_ch_name = 'EMG065,EMG067'
+    # EoG_ch_name = 'EOG061,EOG062'
+    EoG_ch_name = 'EMG065,EMG067'
     l_freq = 0.1
     h_freq = 300
     ignore_exception = False
