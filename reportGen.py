@@ -40,38 +40,39 @@ def generateReport(raw, ica, subj_name, subj_path, basename,
     # ----------------------------------- end generate report for ECG ------------------------------- #
 
 
-    fig4 = ica.plot_scores(
-        eog_scores, exclude=eog_inds, title=ICA_title % 'eog', show=is_show)
-    report.add_figs_to_section(fig4, captions=['Scores of ICs related to EOG'],
-                               section='ICA - EOG')
+    # --------------------------------- Generate report for EoG --------------------------------------------- #
 
     # check how many EoG ch we have
-    # --------------------------------- Generate report for EoG --------------------------------------------- #
-    rs = np.shape(eog_scores)
-    if len(rs) > 1:
-        rr = rs[0]
-        show_picks = [np.abs(eog_scores[i][:]).argsort()[::-1][:5]
-                      for i in range(rr)]
-        for i in range(rr):
-            fig5 = ica.plot_components(show_picks[i][:], title=ICA_title % 'eog',
-                                       colorbar=True, show=is_show)  # ICA nel tempo
-            fig = [fig5]
-            report.add_figs_to_section(fig, captions=['Scores of ICs related to EOG'],
-                                       section='ICA - EOG')
-    else:
-        show_picks = np.abs(eog_scores).argsort()[::-1][:5]
-        fig5 = ica.plot_components(
-            show_picks, title=ICA_title % 'eog', colorbar=True, show=is_show)
-        fig = [fig5]
-        report.add_figs_to_section(fig, captions=['TopoMap of ICs (EOG)', ],
+    if set(EoG_ch_name.split(',')).issubset(set(raw.info['ch_names'])):
+        fig4 = ica.plot_scores(
+            eog_scores, exclude=eog_inds, title=ICA_title % 'eog', show=is_show)
+        report.add_figs_to_section(fig4, captions=['Scores of ICs related to EOG'],
                                    section='ICA - EOG')
-       # -------------------- end generate report for EoG -------------------------------------------------------- #
-    fig9 = ica.plot_sources(eog_evoked, exclude=eog_inds, show=is_show)  # plot EOG sources + selection
-    # fig10 = ica.plot_overlay(eog_evoked, exclude=eog_inds, show=is_show)  # plot EOG cleaning
+        rs = np.shape(eog_scores)
+        if len(rs) > 1:
+            rr = rs[0]
+            show_picks = [np.abs(eog_scores[i][:]).argsort()[::-1][:5]
+                          for i in range(rr)]
+            for i in range(rr):
+                fig5 = ica.plot_components(show_picks[i][:], title=ICA_title % 'eog',
+                                           colorbar=True, show=is_show)  # ICA nel tempo
+                fig = [fig5]
+                report.add_figs_to_section(fig, captions=['Scores of ICs related to EOG'],
+                                           section='ICA - EOG')
+        else:
+            show_picks = np.abs(eog_scores).argsort()[::-1][:5]
+            fig5 = ica.plot_components(
+                show_picks, title=ICA_title % 'eog', colorbar=True, show=is_show)
+            fig = [fig5]
+            report.add_figs_to_section(fig, captions=['TopoMap of ICs (EOG)', ],
+                                       section='ICA - EOG')
+        fig9 = ica.plot_sources(eog_evoked, exclude=eog_inds, show=is_show)  # plot EOG sources + selection
+        # fig10 = ica.plot_overlay(eog_evoked, exclude=eog_inds, show=is_show)  # plot EOG cleaning
 
-    # fig = [fig9, fig10]
-    fig = [fig9]
-    report.add_figs_to_section(fig, captions=['Time-locked EOG sources'], section = 'ICA - EOG')
+        # fig = [fig9, fig10]
+        fig = [fig9]
+        report.add_figs_to_section(fig, captions=['Time-locked EOG sources'], section = 'ICA - EOG')
+   # -------------------- end generate report for EoG -------------------------------------------------------- #
     # import ipdb; ipdb.set_trace()
     IC_nums = range(ica.n_components_)
     fig = ica.plot_components(picks=IC_nums, show=False)
